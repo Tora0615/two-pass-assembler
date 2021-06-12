@@ -4,7 +4,7 @@
 # define ALPHABET 26
 FILE *source_code,*opCode,*outputSP,*objectCode;
 
-
+//相同開頭指令做成一個 Linked List  如 ADD 18 -> ADDF 58 -> ADDR 90 -> AND 40 
 typedef struct opCodeUnit opCodeUnit;
 typedef struct opCodeUnit{
 	char read[8];
