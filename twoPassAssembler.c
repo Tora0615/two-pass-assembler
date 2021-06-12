@@ -16,12 +16,13 @@ typedef struct symbleUnit symbleUnit;
 typedef struct symbleUnit{
 	char read[16];
 	int address;
-}*symbleTable;
+};
 
 void setOpCode(opCodeUnit*,char*);
 void pass1();
 void getInst(char*,char*,char*,char*);
 int stringX16ToInt(char*);
+int commentLine(char*);
 void pass2();
 
 int main(){
@@ -104,8 +105,11 @@ void setOpCode(opCodeUnit* point,char* readin){
 }
 
 int STSize = 2,TOP = 0;
+symbleUnit* symbleTable;
+int location,startAD;
 
-int location = 0,startAD = 0;
+char ProgramName[30];
+
 
 void pass1(){
 	char strBuf[100];
@@ -113,22 +117,53 @@ void pass1(){
 	char symbolBuf[16];
 	char opCodeBuf[8];
 	char InputBuf[16];
+	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
+	do{
+		fscanf(source_code,"%[^\n]",strBuf);
+		charBuf = fgetc(source_code);
+	}while(commentLine(strBuf));
 	
-	fscanf(source_code,"%[^\n]",strBuf);
-	charBuf = fgetc(source_code);
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
-
 	int i,j;
 	if(!stricmp(opCodeBuf,"START")){
-		location = stringX16ToInt(InputBuf);
-		startAD = location;
+		startAD = stringX16ToInt(InputBuf);
+		location = startAD;
 	}
 	else{
-		//pass
+		location = 0;
 	}
+	
+	do{
+		fscanf(source_code,"%[^\n]",strBuf);
+		charBuf = fgetc(source_code);
+	}while(commentLine(strBuf));
+	
+	while(stricmp(opCodeBuf,"END")){
+		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+		printf("%s\n",strBuf);
+		
+		do{
+			fscanf(source_code,"%[^\n]",strBuf);
+			charBuf = fgetc(source_code);
+		}while(commentLine(strBuf));
+	}
+	
 
 }
 
+int commentLine(char* Line){
+	int i;
+	for(i = 0;i < strlen(Line);i++){
+		if(Line[i] != ' '&&Line[i] != '\t')	
+			break;
+	}
+	if(Line[i] == ';'){
+		return 1;
+	}
+	else{
+		return 0;
+	}
+}
 
 void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	int i = 0,j;
@@ -148,7 +183,29 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	}
 	opCodeBuf[j] = '\0';
 	
-	if(i == strlen(strBuf)){
+	int commentflag = 0;
+	for(j = i;j < strlen(strBuf);j++){
+		if(strBuf[j] == ';'){
+			commentflag = 1;
+			break;
+		}
+		if(strBuf[j] == '\"'){
+			for(;j < strlen(strBuf);j++){
+				if(strBuf[j] == '\"'){
+					break;
+				}
+			}
+		}
+		if(strBuf[j] == '\''){
+			for(;j < strlen(strBuf);j++){
+				if(strBuf[j] == '\''){
+					break;
+				}
+			}
+		}
+	}
+	
+	if(i == strlen(strBuf)||commentflag == 1){
 		InputBuf = "0000";
 	}
 	else{
