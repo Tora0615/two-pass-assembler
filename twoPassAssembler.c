@@ -137,15 +137,17 @@ void pass1(){
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
-	
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	while(stricmp(opCodeBuf,"END")){
-		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
-		printf("%s\n",strBuf);
+		
+		
+		//printf("%s\n",strBuf);
 		
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
 			charBuf = fgetc(source_code);
 		}while(commentLine(strBuf));
+		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	}
 	
 
