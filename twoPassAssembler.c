@@ -343,8 +343,9 @@ void pass2(){
 	char opCodeBuf[8];
 	char InputBuf[16];
 	
-	char objCode[4];
+	char opCTrans[4];
 	opCodeUnit* point;
+	int objcode=0;
 	
 	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
 	do{
@@ -357,15 +358,7 @@ void pass2(){
 
 	location = startAD;
 	fprintf(outputSP,"%X\t%s\n",location,strBuf);
-	
-	point = getopCodeD(InputBuf);
-	if (point == NULL){
-		strcpy(objCode,"");
-	}else{
-		strcpy(objCode,point->translate);
-	}
-	//printf("%d\n\n",point);
-	printf("%x\t%s\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf,objCode);
+	printf("%x\t%s\t%s\t%s\t%x\n",location,symbolBuf,opCodeBuf,InputBuf);
 	
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
@@ -373,19 +366,46 @@ void pass2(){
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	
+		
+	
+		//¦L¥X symbol table
+	printf("symbol table:\n\n");
+	int i;
+	for(i = 0;i < TOP;i++){
+		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
+	}
+	printf("\n\n\n");
+	
+	
+	
+	
+	
+	
 	
 	while(stricmp(opCodeBuf,"END")){
 		
 		fprintf(outputSP,"%X\t%s\n",location,strBuf);
 
-		point = getopCodeD(InputBuf);
+		point = getopCodeD(opCodeBuf);
 		if (point == NULL){
-			strcpy(objCode,"");
+			strcpy(opCTrans,"");
 		}else{
-			strcpy(objCode,point->translate);
+			strcpy(opCTrans,point->translate);
+			objcode = stringX16ToInt(opCTrans)*16*16*16*16 ;
+			int addLocate=0;
+//			int i,cmpResult;
+//			for(i = 0;i < TOP;i++){
+//				printf("%s ",(symbleTable+i)->read);
+//				cmpResult = strcmp((symbleTable+i)->read, symbolBuf);
+//				printf("%d\n",cmpResult);
+//				if (cmpResult == 0){
+//					addLocate=(symbleTable+i)->address;
+//				}
+//			}
+			objcode = objcode + addLocate;
 		}
-//
-		printf("%x\t%s\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf,objCode);
+
+		printf("%x\t%s\t%s\t%s\t%x\n",location,symbolBuf,opCodeBuf,InputBuf,objcode);
 
 		if(!stricmp(opCodeBuf,"BYTE")){
 			if(InputBuf[0] == 'X'){	
@@ -425,5 +445,7 @@ void pass2(){
 	fprintf(outputSP,"\t%s\n",strBuf);
 	printf("\t%s\n",strBuf);
 	fclose(outputSP);
+	
+
 }
 
