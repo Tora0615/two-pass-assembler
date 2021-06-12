@@ -21,6 +21,7 @@ typedef struct symbleUnit{
 void setOpCode(opCodeUnit*,char*);
 void pass1();
 void getInst(char*,char*,char*,char*);
+int stringX16ToInt(char*);
 void pass2();
 
 int main(){
@@ -119,24 +120,8 @@ void pass1(){
 
 	int i,j;
 	if(!stricmp(opCodeBuf,"START")){
-		
-		int count = strlen(InputBuf) - 1;
-		for(i = 0;InputBuf[i] != '\0';i++,count--){
-			int numBuf = 0;
-			if(InputBuf[i] >= '0'&&InputBuf[i] <= '9'){
-				numBuf = InputBuf[i] - '0';
-			}
-			else if(InputBuf[i] >= 'A'&&InputBuf[i] <= 'F'){
-				numBuf = InputBuf[i] - 'A' + 10;
-			}
-			for(j = 0;j < count;j++){
-				numBuf *= 16;
-			}
-			location += numBuf;
-			
-		}
+		location = stringX16ToInt(InputBuf);
 		startAD = location;
-		printf("%x\n",location);
 	}
 	else{
 		//pass
@@ -178,6 +163,26 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 		InputBuf[j] = '\0';
 	}
 	
+}
+
+int stringX16ToInt(char* InputBuf){
+	int Plus = 0;
+	int count = strlen(InputBuf) - 1;
+	int i,j;
+	for(i = 0;InputBuf[i] != '\0';i++,count--){
+		int numBuf = 0;
+		if(InputBuf[i] >= '0'&&InputBuf[i] <= '9'){
+			numBuf = InputBuf[i] - '0';
+		}
+		else if(InputBuf[i] >= 'A'&&InputBuf[i] <= 'F'){
+			numBuf = InputBuf[i] - 'A' + 10;
+		}
+		for(j = 0;j < count;j++){
+			numBuf *= 16;
+		}
+		Plus += numBuf;	
+	}
+	return Plus;
 }
 
 void pass2(){
