@@ -4,6 +4,7 @@
 # define ALPHABET 26
 FILE *source_code,*opCode,*outputSP,*objectCode;
 
+
 //相同開頭指令做成一個 Linked List  如 ADD 18 -> ADDF 58 -> ADDR 90 -> AND 40 
 typedef struct opCodeUnit opCodeUnit;
 typedef struct opCodeUnit{
@@ -40,6 +41,7 @@ int main(){
 		exit(0);
 	}
 	
+	// 初始化 ALPHABET 大小(26)的 List，作為每個字母的Linked List開頭 
 	alphtable = (opCodeUnit**)malloc(sizeof(opCodeUnit*)*ALPHABET);
 	int i;
 	for(i = 0;i < ALPHABET;i++){
@@ -49,7 +51,8 @@ int main(){
 	char charBuf = NULL;
 	char stringBuf[15];
 	
-	while(charBuf != EOF){ //store the data which are in opCodefile into alphtable
+	//store the data which are in opCodefile into alphtable
+	while(charBuf != EOF){ 
 		fscanf(opCode,"%[^\n]",stringBuf);
 		int index = (stringBuf[0] >= 'a' && stringBuf[0] <= 'z')?stringBuf[0]-'a':stringBuf[0]-'A';		
 		if(*(alphtable + index) == NULL){
@@ -73,23 +76,21 @@ int main(){
 	fclose(opCode);
 	
 	
-	
+	//第一階段 
 	if((source_code = fopen(sourcefile,"r")) == NULL){
 		printf("Fail to open file %s !",sourcefile);
 		exit(0);
 	}
 	pass1();
-	
-	
 	fclose(source_code);
 	
+	
+	//第二階段 
 	if((source_code = fopen(sourcefile,"r")) == NULL){
 		printf("Fail to open file %s !",sourcefile);
 		exit(0);
 	}
 	pass2();
-	
-	
 	fclose(source_code);
    	
 	system("PAUSE");
@@ -190,6 +191,9 @@ void pass1(){
 	Length = location-startAD;
 	//printf("%X\n",Length);
 	printf("\n\n\n");
+	
+	
+	//印出 symbol table
 	printf("symbol table:\n\n");
 	for(i = 0;i < TOP;i++){
 		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
@@ -222,7 +226,7 @@ void push(char* symbolBuf){
 	TOP++;
 }
 
-
+//註解相關 
 int commentLine(char* Line){
 	int i;
 	for(i = 0;i < strlen(Line);i++){
@@ -323,9 +327,10 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 		}
 	}
 	else{
-		printf("can't find %s in the table.\n",opCodeBuf);
-		exit(0);
+		//printf("can't find %s in the table.\n",opCodeBuf);
+		//exit(0);  //會error 
 	}
+	//printf("%s - %p\n",opCodeBuf, point);
 	return point;
 }
 
@@ -337,6 +342,10 @@ void pass2(){
 	char symbolBuf[16];
 	char opCodeBuf[8];
 	char InputBuf[16];
+	
+	char objCode[4];
+	opCodeUnit* point;
+	
 	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
@@ -344,19 +353,39 @@ void pass2(){
 	}while(commentLine(strBuf));
 
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
-	int i,j;
+
 
 	location = startAD;
 	fprintf(outputSP,"%X\t%s\n",location,strBuf);
+	
+	point = getopCodeD(InputBuf);
+	if (point == NULL){
+		strcpy(objCode,"");
+	}else{
+		strcpy(objCode,point->translate);
+	}
+	//printf("%d\n\n",point);
+	printf("%x\t%s\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf,objCode);
 	
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	
+	
 	while(stricmp(opCodeBuf,"END")){
 		
 		fprintf(outputSP,"%X\t%s\n",location,strBuf);
+
+		point = getopCodeD(InputBuf);
+		if (point == NULL){
+			strcpy(objCode,"");
+		}else{
+			strcpy(objCode,point->translate);
+		}
+//
+		printf("%x\t%s\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf,objCode);
 
 		if(!stricmp(opCodeBuf,"BYTE")){
 			if(InputBuf[0] == 'X'){	
@@ -388,8 +417,13 @@ void pass2(){
 			charBuf = fgetc(source_code);
 		}while(commentLine(strBuf));
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+		
+		
+		
+		
 	}
-	fprintf(outputSP,"\t%s",strBuf);
+	fprintf(outputSP,"\t%s\n",strBuf);
+	printf("\t%s\n",strBuf);
 	fclose(outputSP);
 }
 
