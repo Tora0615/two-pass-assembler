@@ -11,6 +11,7 @@ typedef struct opCodeUnit{
 	char translate[3];
 	struct opCodeUnit* next;
 };
+opCodeUnit **alphtable;
 
 typedef struct symbleUnit symbleUnit;
 typedef struct symbleUnit{
@@ -24,6 +25,9 @@ void getInst(char*,char*,char*,char*);
 int stringX16ToInt(char*);
 int stringX10ToInt(char*);
 int commentLine(char*);
+void push(char*);
+opCodeUnit* getopCodeD(char*); 
+
 void pass2();
 
 int main(){
@@ -36,7 +40,7 @@ int main(){
 		exit(0);
 	}
 	
-	opCodeUnit **alphtable = (opCodeUnit**)malloc(sizeof(opCodeUnit*)*ALPHABET);
+	alphtable = (opCodeUnit**)malloc(sizeof(opCodeUnit*)*ALPHABET);
 	int i;
 	for(i = 0;i < ALPHABET;i++){
 		*(alphtable+i) =  NULL;
@@ -110,7 +114,7 @@ symbleUnit* symbleTable;
 int location,startAD;
 
 char ProgramName[30];
-
+int Length;
 
 void pass1(){
 	char strBuf[100];
@@ -123,13 +127,13 @@ void pass1(){
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
-	
+	printf("Instruction and it's location counter:\n\n");
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	int i,j;
 	if(!stricmp(opCodeBuf,"START")){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
-		printf("%x\t%s\n",location,strBuf);
+		printf("%X\t%s\n",location,strBuf);
 	}
 	else{
 		location = 0;
@@ -143,12 +147,17 @@ void pass1(){
 	while(stricmp(opCodeBuf,"END")){
 		
 		
-		printf("%x\t%s\n",location,strBuf);
+		printf("%X\t%s\n",location,strBuf);
+		if(symbolBuf[0] != '\0'){
+			push(symbolBuf);
+		}
+		
 		if(!stricmp(opCodeBuf,"BYTE")){
-			if(InputBuf[0] == 'X'){
+			if(InputBuf[0] == 'X'){	
 				location += 1;
 			}
 			else if(InputBuf[0] == 'C'){
+				
 				location += 3;
 			} 
 		}
@@ -164,6 +173,11 @@ void pass1(){
 			location += (3*num);
 		}
 		else{
+			opCodeUnit* point = getopCodeD(opCodeBuf);
+			if(point == NULL){
+				printf("can't find %s in the table.\n",opCodeBuf);
+				exit(0);
+			}
 			location += 3;
 		}
 		
@@ -174,7 +188,41 @@ void pass1(){
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	}
 	printf("\t%s\n",strBuf);
+	Length = location-startAD;
+	//printf("%X\n",Length);
+	printf("\n\n\n");
+	printf("symbol table:\n\n");
+	for(i = 0;i < TOP;i++){
+		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
+	}
+	printf("\n\n\n");
 }
+
+void push(char* symbolBuf){
+	
+	int i;
+	for(i = 0;i < TOP;i++){
+		if(!stricmp((symbleTable+i)->read,symbolBuf)){
+			printf("Varible %s is already exist.\n",symbolBuf);
+			exit(0);
+		}
+	}
+	
+	if(TOP == STSize){
+		STSize *= 2;
+		symbleUnit* temp = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
+		for(i = 0;i < TOP;i++){
+			strcpy((temp+i)->read,(symbleTable+i)->read);
+			(temp+i)->address = (symbleTable+i)->address;
+		}
+		symbleTable = temp;
+	}
+	
+	strcpy((symbleTable+TOP)->read,symbolBuf);
+	(symbleTable+TOP)->address = location;
+	TOP++;
+}
+
 
 int commentLine(char* Line){
 	int i;
@@ -239,6 +287,7 @@ int stringX16ToInt(char* InputBuf){
 	}
 	return Plus;
 }
+
 int stringX10ToInt(char* InputBuf){
 	int num = 0;
 	int count = strlen(InputBuf) - 1;
@@ -253,6 +302,34 @@ int stringX10ToInt(char* InputBuf){
 	}
 	return num;
 }
+
+opCodeUnit* getopCodeD(char* opCodeBuf){
+	opCodeUnit* point;
+	if(opCodeBuf[0] >= 'A'&&opCodeBuf[0] <= 'Z'){
+		point = *(alphtable + opCodeBuf[0]-'A');
+		while(point != NULL){
+			if(!stricmp(point->read,opCodeBuf)){
+				break;
+			}
+			point = point->next;
+		}
+	}
+	else if(opCodeBuf[0] >= 'a'&&opCodeBuf[0] <= 'z'){
+		point = *(alphtable + opCodeBuf[0]-'a');
+		while(point != NULL){
+			if(!stricmp(point->read,opCodeBuf)){
+				break;
+			}
+			point = point->next;
+		}
+	}
+	else{
+		printf("can't find %s in the table.\n",opCodeBuf);
+		exit(0);
+	}
+	return point;
+}
+
 
 void pass2(){
 	
