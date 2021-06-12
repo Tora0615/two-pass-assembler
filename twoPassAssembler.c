@@ -2,7 +2,7 @@
 # include <stdlib.h>
 # include <string.h>
 # define ALPHABET 26
-FILE *source_code,*opCode,*output;
+FILE *source_code,*opCode,*outputSP,*objectCode;
 
 
 typedef struct opCodeUnit opCodeUnit;
@@ -145,7 +145,6 @@ void pass1(){
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	while(stricmp(opCodeBuf,"END")){
-		
 		
 		printf("%X\t%s\n",location,strBuf);
 		if(symbolBuf[0] != '\0'){
@@ -332,9 +331,65 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 
 
 void pass2(){
+	outputSP = fopen("source_program.txt","w");
+	char strBuf[100];
+	char charBuf;
+	char symbolBuf[16];
+	char opCodeBuf[8];
+	char InputBuf[16];
+	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
+	do{
+		fscanf(source_code,"%[^\n]",strBuf);
+		charBuf = fgetc(source_code);
+	}while(commentLine(strBuf));
+
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	int i,j;
+
+	location = startAD;
+	fprintf(outputSP,"%X\t%s\n",location,strBuf);
 	
-	
-	
-	
+	do{
+		fscanf(source_code,"%[^\n]",strBuf);
+		charBuf = fgetc(source_code);
+	}while(commentLine(strBuf));
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	while(stricmp(opCodeBuf,"END")){
+		
+		fprintf(outputSP,"%X\t%s\n",location,strBuf);
+
+		if(!stricmp(opCodeBuf,"BYTE")){
+			if(InputBuf[0] == 'X'){	
+				location += 1;
+			}
+			else if(InputBuf[0] == 'C'){
+				
+				location += 3;
+			} 
+		}
+		else if(!stricmp(opCodeBuf,"WORD")){
+			location += 3;
+		}
+		else if(!stricmp(opCodeBuf,"RESB")){
+			int num = stringX10ToInt(InputBuf);
+			location += num;
+		}
+		else if(!stricmp(opCodeBuf,"RESW")){
+			int num = stringX10ToInt(InputBuf);
+			location += (3*num);
+		}
+		else{
+			opCodeUnit* point = getopCodeD(opCodeBuf);
+			location += 3;
+		}
+		
+		do{
+			fscanf(source_code,"%[^\n]",strBuf);
+			charBuf = fgetc(source_code);
+		}while(commentLine(strBuf));
+		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	}
+	fprintf(outputSP,"\t%s",strBuf);
+	fclose(outputSP);
 }
 
