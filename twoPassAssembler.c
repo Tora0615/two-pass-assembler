@@ -347,7 +347,6 @@ void pass2(){
 	opCodeUnit* point;
 	int objcode=0;
 	
-	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
@@ -368,20 +367,6 @@ void pass2(){
 	
 		
 	
-		//¦L¥X symbol table
-	printf("symbol table:\n\n");
-	int i;
-	for(i = 0;i < TOP;i++){
-		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
-	}
-	printf("\n\n\n");
-	
-	
-	
-	
-	
-	
-	
 	while(stricmp(opCodeBuf,"END")){
 		
 		fprintf(outputSP,"%X\t%s\n",location,strBuf);
@@ -393,15 +378,15 @@ void pass2(){
 			strcpy(opCTrans,point->translate);
 			objcode = stringX16ToInt(opCTrans)*16*16*16*16 ;
 			int addLocate=0;
-//			int i,cmpResult;
-//			for(i = 0;i < TOP;i++){
-//				printf("%s ",(symbleTable+i)->read);
-//				cmpResult = strcmp((symbleTable+i)->read, symbolBuf);
-//				printf("%d\n",cmpResult);
-//				if (cmpResult == 0){
-//					addLocate=(symbleTable+i)->address;
-//				}
-//			}
+			int i,cmpResult;
+			for(i = 0;i < TOP;i++){
+				//printf("%s ",(symbleTable+i)->read);
+				cmpResult = strcmp((symbleTable+i)->read, InputBuf);
+				//printf("%d\n",cmpResult);
+			if (cmpResult == 0){
+					addLocate=(symbleTable+i)->address;
+				}
+			}
 			objcode = objcode + addLocate;
 		}
 
