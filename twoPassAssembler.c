@@ -20,6 +20,7 @@ typedef struct symbleUnit{
 
 void setOpCode(opCodeUnit*,char*);
 void pass1();
+void getInst(char*,char*,char*,char*);
 void pass2();
 
 int main(){
@@ -63,16 +64,6 @@ int main(){
 	}
 	
 	fclose(opCode);
-	
-	for(i = 0;i < 26;i++){ //show the alphtable
-		if(*(alphtable + i) != NULL){
-			opCodeUnit* point = *(alphtable + i);
-			while(point != NULL){
-				printf("%s %s\n",point->read,point->translate);
-				point = point->next;
-			}
-		}
-	}
 	
 	
 	
@@ -118,42 +109,25 @@ int location = 0,startAD = 0;
 void pass1(){
 	char strBuf[100];
 	char charBuf;
+	char symbolBuf[16];
 	char opCodeBuf[8];
+	char InputBuf[16];
+	
 	fscanf(source_code,"%[^\n]",strBuf);
 	charBuf = fgetc(source_code);
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+
 	int i,j;
-	for(i = 0;i < strlen(strBuf);i++){
-		if((strBuf[i] == '\t'||strBuf[i] == ' ')&&(strBuf[i+1] != '\t'&&strBuf[i+1] != ' ')){
-			break;
-		}
-	}
-	
-	for(j = 0,i+=1;i < 100;j++,i++){
-		if((strBuf[i-1] != '\t'&&strBuf[i-1] != ' ')&&(strBuf[i] == '\t'||strBuf[i] == ' '||strBuf[i] == '\n')){
-			break;
-		}
-		opCodeBuf[j] = strBuf[i];
-	}
-	opCodeBuf[j] = '\0';
 	if(!stricmp(opCodeBuf,"START")){
-		for(;i < strlen(strBuf);i++){
-			if((strBuf[i] == '\t'||strBuf[i] == ' ')&&(strBuf[i+1] != '\t'&&strBuf[i+1] != ' ')){
-				break;
-			}
-		}
-		i++;
-		int count = -1;
-		for(j = i;strBuf[j] != '\0';j++){
-			count++; 
-		}
 		
-		for(;strBuf[i] != '\0';i++,count--){
+		int count = strlen(InputBuf) - 1;
+		for(i = 0;InputBuf[i] != '\0';i++,count--){
 			int numBuf = 0;
-			if(strBuf[i] >= '0'&&strBuf[i] <= '9'){
-				numBuf = strBuf[i] - '0';
+			if(InputBuf[i] >= '0'&&InputBuf[i] <= '9'){
+				numBuf = InputBuf[i] - '0';
 			}
-			else if(strBuf[i] >= 'A'&&strBuf[i] <= 'F'){
-				numBuf = strBuf[i] - 'A' + 10;
+			else if(InputBuf[i] >= 'A'&&InputBuf[i] <= 'F'){
+				numBuf = InputBuf[i] - 'A' + 10;
 			}
 			for(j = 0;j < count;j++){
 				numBuf *= 16;
@@ -162,11 +136,48 @@ void pass1(){
 			
 		}
 		startAD = location;
+		printf("%x\n",location);
 	}
 	else{
 		//pass
 	}
 
+}
+
+
+void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
+	int i = 0,j;
+	for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' ';i++,j++){
+		symbolBuf[j] = strBuf[i];
+	}
+	symbolBuf[j] = '\0';
+	
+	for(;;i++){
+		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
+			break;
+		}
+	}
+	
+	for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0';i++,j++){
+		opCodeBuf[j] = strBuf[i];
+	}
+	opCodeBuf[j] = '\0';
+	
+	if(i == strlen(strBuf)){
+		InputBuf = "0000";
+	}
+	else{
+		for(;;i++){
+			if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
+				break;
+			}
+		}
+		for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0';i++,j++){
+			InputBuf[j] = strBuf[i];
+		}
+		InputBuf[j] = '\0';
+	}
+	
 }
 
 void pass2(){
