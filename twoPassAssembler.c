@@ -12,7 +12,15 @@ typedef struct opCodeUnit{
 	struct opCodeUnit* next;
 };
 
+typedef struct symbleUnit symbleUnit;
+typedef struct symbleUnit{
+	char read[16];
+	int address;
+}*symbleTable;
+
 void setOpCode(opCodeUnit*,char*);
+void pass1();
+void pass2();
 
 int main(){
 	
@@ -72,6 +80,18 @@ int main(){
 		printf("Fail to open file %s !",sourcefile);
 		exit(0);
 	}
+	pass1();
+	
+	
+	fclose(source_code);
+	
+	if((source_code = fopen(sourcefile,"r")) == NULL){
+		printf("Fail to open file %s !",sourcefile);
+		exit(0);
+	}
+	pass2();
+	
+	
 	fclose(source_code);
 	
 	system("PAUSE");
@@ -91,4 +111,68 @@ void setOpCode(opCodeUnit* point,char* readin){
 	point->translate[2] = '\0';
 }
 
+int STSize = 2,TOP = 0;
+
+int location = 0,startAD = 0;
+
+void pass1(){
+	char strBuf[100];
+	char charBuf;
+	char opCodeBuf[8];
+	fscanf(source_code,"%[^\n]",strBuf);
+	charBuf = fgetc(source_code);
+	int i,j;
+	for(i = 0;i < strlen(strBuf);i++){
+		if((strBuf[i] == '\t'||strBuf[i] == ' ')&&(strBuf[i+1] != '\t'&&strBuf[i+1] != ' ')){
+			break;
+		}
+	}
+	
+	for(j = 0,i+=1;i < 100;j++,i++){
+		if((strBuf[i-1] != '\t'&&strBuf[i-1] != ' ')&&(strBuf[i] == '\t'||strBuf[i] == ' '||strBuf[i] == '\n')){
+			break;
+		}
+		opCodeBuf[j] = strBuf[i];
+	}
+	opCodeBuf[j] = '\0';
+	if(!stricmp(opCodeBuf,"START")){
+		for(;i < strlen(strBuf);i++){
+			if((strBuf[i] == '\t'||strBuf[i] == ' ')&&(strBuf[i+1] != '\t'&&strBuf[i+1] != ' ')){
+				break;
+			}
+		}
+		i++;
+		int count = -1;
+		for(j = i;strBuf[j] != '\0';j++){
+			count++; 
+		}
+		
+		for(;strBuf[i] != '\0';i++,count--){
+			int numBuf = 0;
+			if(strBuf[i] >= '0'&&strBuf[i] <= '9'){
+				numBuf = strBuf[i] - '0';
+			}
+			else if(strBuf[i] >= 'A'&&strBuf[i] <= 'F'){
+				numBuf = strBuf[i] - 'A' + 10;
+			}
+			for(j = 0;j < count;j++){
+				numBuf *= 16;
+			}
+			location += numBuf;
+			
+		}
+		startAD = location;
+	}
+	else{
+		//pass
+	}
+
+}
+
+void pass2(){
+	
+	
+	
+	
+}
 
