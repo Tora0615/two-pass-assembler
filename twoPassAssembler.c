@@ -22,6 +22,7 @@ void setOpCode(opCodeUnit*,char*);
 void pass1();
 void getInst(char*,char*,char*,char*);
 int stringX16ToInt(char*);
+int stringX10ToInt(char*);
 int commentLine(char*);
 void pass2();
 
@@ -86,7 +87,7 @@ int main(){
 	
 	
 	fclose(source_code);
-	
+   	
 	system("PAUSE");
 	return 0;
 }
@@ -128,6 +129,7 @@ void pass1(){
 	if(!stricmp(opCodeBuf,"START")){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
+		printf("%x\t%s\n",location,strBuf);
 	}
 	else{
 		location = 0;
@@ -141,7 +143,29 @@ void pass1(){
 	while(stricmp(opCodeBuf,"END")){
 		
 		
-		//printf("%s\n",strBuf);
+		printf("%x\t%s\n",location,strBuf);
+		if(!stricmp(opCodeBuf,"BYTE")){
+			if(InputBuf[0] == 'X'){
+				location += 1;
+			}
+			else if(InputBuf[0] == 'C'){
+				location += 3;
+			} 
+		}
+		else if(!stricmp(opCodeBuf,"WORD")){
+			location += 3;
+		}
+		else if(!stricmp(opCodeBuf,"RESB")){
+			int num = stringX10ToInt(InputBuf);
+			location += num;
+		}
+		else if(!stricmp(opCodeBuf,"RESW")){
+			int num = stringX10ToInt(InputBuf);
+			location += (3*num);
+		}
+		else{
+			location += 3;
+		}
 		
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
@@ -149,8 +173,7 @@ void pass1(){
 		}while(commentLine(strBuf));
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	}
-	
-
+	printf("\t%s\n",strBuf);
 }
 
 int commentLine(char* Line){
@@ -185,43 +208,16 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	}
 	opCodeBuf[j] = '\0';
 	
-	int commentflag = 0;
-	for(j = i;j < strlen(strBuf);j++){
-		if(strBuf[j] == ';'){
-			commentflag = 1;
+	
+	for(;;i++){
+		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
 			break;
 		}
-		if(strBuf[j] == '\"'){
-			for(;j < strlen(strBuf);j++){
-				if(strBuf[j] == '\"'){
-					break;
-				}
-			}
-		}
-		if(strBuf[j] == '\''){
-			for(;j < strlen(strBuf);j++){
-				if(strBuf[j] == '\''){
-					break;
-				}
-			}
-		}
 	}
-	
-	if(i == strlen(strBuf)||commentflag == 1){
-		InputBuf = "0000";
+	for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0'&&(strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0');i++,j++){
+		InputBuf[j] = strBuf[i];
 	}
-	else{
-		for(;;i++){
-			if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
-				break;
-			}
-		}
-		for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0';i++,j++){
-			InputBuf[j] = strBuf[i];
-		}
-		InputBuf[j] = '\0';
-	}
-	
+	InputBuf[j] = '\0';	
 }
 
 int stringX16ToInt(char* InputBuf){
@@ -242,6 +238,20 @@ int stringX16ToInt(char* InputBuf){
 		Plus += numBuf;	
 	}
 	return Plus;
+}
+int stringX10ToInt(char* InputBuf){
+	int num = 0;
+	int count = strlen(InputBuf) - 1;
+	int i,j;
+	for(i = 0;InputBuf[i] != '\0';i++,count--){
+		int numBuf = 0;
+		numBuf = InputBuf[i] - '0';
+		for(j = 0;j < count;j++){
+			numBuf *= 10;
+		}
+		num += numBuf;	
+	}
+	return num;
 }
 
 void pass2(){
