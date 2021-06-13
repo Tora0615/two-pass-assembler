@@ -135,6 +135,7 @@ void pass1(){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
 		printf("%X\t%s\n",location,strBuf);
+		strcpy(ProgramName,symbolBuf);
 	}
 	else{
 		location = 0;
@@ -261,7 +262,7 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	
 	
 	for(;;i++){
-		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
+		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')||strBuf[i]=='\0'){
 			break;
 		}
 	}
@@ -316,6 +317,8 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 			}
 			point = point->next;
 		}
+				if(point == NULL){
+		}
 	}
 	else if(opCodeBuf[0] >= 'a'&&opCodeBuf[0] <= 'z'){
 		point = *(alphtable + opCodeBuf[0]-'a');
@@ -327,16 +330,18 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 		}
 	}
 	else{
-		//printf("can't find %s in the table.\n",opCodeBuf);
-		//exit(0);  //·|error 
+		printf("can't find %s in the table.\n",opCodeBuf);
+		exit(0);
 	}
-	//printf("%s - %p\n",opCodeBuf, point);
+
 	return point;
 }
 
 
 void pass2(){
 	outputSP = fopen("source_program.txt","w");
+	objectCode = fopen("objCode.txt","w");
+	fprintf(objectCode,"H%s\t%06X%06X\n",ProgramName,startAD,Length);
 	char strBuf[100];
 	char charBuf;
 	char symbolBuf[16];
@@ -345,9 +350,8 @@ void pass2(){
 	
 	char opCTrans[4];
 	opCodeUnit* point;
-	int objcode=0;
-	
-	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
+	int objcode = 0;
+	int addLocate;
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
@@ -358,54 +362,77 @@ void pass2(){
 
 	location = startAD;
 	fprintf(outputSP,"%X\t%s\n",location,strBuf);
-	printf("%x\t%s\t%s\t%s\t%x\n",location,symbolBuf,opCodeBuf,InputBuf);
+
 	
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
-	
-		
-	
-		//¦L¥X symbol table
-	printf("symbol table:\n\n");
-	int i;
-	for(i = 0;i < TOP;i++){
-		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
-	}
-	printf("\n\n\n");
-	
-	
-	
-	
-	
-	
-	
+	int now = location;
+	fprintf(objectCode,"T%06X",location);
 	while(stricmp(opCodeBuf,"END")){
-		
-		fprintf(outputSP,"%X\t%s\n",location,strBuf);
-
+		int prelo = location;
 		point = getopCodeD(opCodeBuf);
 		if (point == NULL){
 			strcpy(opCTrans,"");
+			if(!stricmp(opCodeBuf,"BYTE")){
+				if(InputBuf[0] == 'X'){
+					char bufX16[3];
+					bufX16[0] = InputBuf[2];
+					bufX16[1] = InputBuf[3];
+					bufX16[2] = '\0';
+					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(bufX16));
+				}
+				else if(InputBuf[0] == 'C'){
+					char bufX16[4];
+					bufX16[0] = InputBuf[2];
+					bufX16[1] = InputBuf[3];
+					bufX16[2] = InputBuf[4];
+					bufX16[3] = '\0';
+					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X%02X%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,bufX16[0],bufX16[1],bufX16[2]);
+				} 
+			}
+			else if(!stricmp(opCodeBuf,"WORD")){
+				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(InputBuf));
+			}
+			else if(!stricmp(opCodeBuf,"RESB")){
+				fprintf(outputSP,"%x\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+			}
+			else if(!stricmp(opCodeBuf,"RESW")){
+				fprintf(outputSP,"%x\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+			}
+			else{
+				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+			}	
 		}else{
 			strcpy(opCTrans,point->translate);
-			objcode = stringX16ToInt(opCTrans)*16*16*16*16 ;
-			int addLocate=0;
-//			int i,cmpResult;
-//			for(i = 0;i < TOP;i++){
-//				printf("%s ",(symbleTable+i)->read);
-//				cmpResult = strcmp((symbleTable+i)->read, symbolBuf);
-//				printf("%d\n",cmpResult);
-//				if (cmpResult == 0){
-//					addLocate=(symbleTable+i)->address;
-//				}
-//			}
-			objcode = objcode + addLocate;
+			objcode = 0;
+			addLocate = 0;
+			int i;
+			for(i = 0;i < TOP;i++){
+				if(!stricmp((symbleTable+i)->read, InputBuf)){
+					break;
+				}
+			}
+			if(i != TOP){
+				addLocate=(symbleTable+i)->address;
+				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+			}
+			else if(InputBuf[strlen(InputBuf)-2] == ','&&InputBuf[strlen(InputBuf)-1] == 'X'){
+				fprintf(outputSP,"%x\t%s\t%s\t%s\t%s",location,symbolBuf,opCodeBuf,InputBuf,opCTrans);
+				InputBuf[strlen(InputBuf)-2] = '\0';
+				for(i = 0;i < TOP;i++){
+					if(!stricmp((symbleTable+i)->read, InputBuf)){
+						break;
+					}
+				}
+				addLocate=(symbleTable+i)->address;
+				addLocate += 32768;
+				fprintf(outputSP,"%04X\n",addLocate);
+			}
 		}
 
-		printf("%x\t%s\t%s\t%s\t%x\n",location,symbolBuf,opCodeBuf,InputBuf,objcode);
 
 		if(!stricmp(opCodeBuf,"BYTE")){
 			if(InputBuf[0] == 'X'){	
@@ -431,21 +458,19 @@ void pass2(){
 			opCodeUnit* point = getopCodeD(opCodeBuf);
 			location += 3;
 		}
-		
+		if(location - now > 31){
+			fprintf(objectCode,"\nT%06X",location);
+			now = location;
+		}
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
 			charBuf = fgetc(source_code);
 		}while(commentLine(strBuf));
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
-		
-		
-		
-		
 	}
 	fprintf(outputSP,"\t%s\n",strBuf);
-	printf("\t%s\n",strBuf);
-	fclose(outputSP);
 	
-
+	fclose(outputSP);
+	fclose(objectCode);
 }
 
