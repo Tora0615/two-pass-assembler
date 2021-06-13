@@ -350,8 +350,10 @@ void pass2(){
 	
 	char opCTrans[4];
 	opCodeUnit* point;
+
 	int objcode = 0;
 	int addLocate;
+
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
@@ -369,8 +371,10 @@ void pass2(){
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+
 	int now = location;
 	fprintf(objectCode,"T%06X",location);
+
 	while(stricmp(opCodeBuf,"END")){
 		int prelo = location;
 		point = getopCodeD(opCodeBuf);
@@ -431,6 +435,7 @@ void pass2(){
 				addLocate += 32768;
 				fprintf(outputSP,"%04X\n",addLocate);
 			}
+
 		}
 
 
