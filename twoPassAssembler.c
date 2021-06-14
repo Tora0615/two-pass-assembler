@@ -2,12 +2,12 @@
 # include <stdlib.h>
 # include <string.h>
 # define ALPHABET 26
-FILE *source_code,*opCode,*outputSP,*objectCode;
+# define contain 2000
+FILE *source_code,*opCode,*output,*outputSP,*OBJ;
 
 
-//相同開頭指令做成一個 Linked List  如 ADD 18 -> ADDF 58 -> ADDR 90 -> AND 40 
 typedef struct opCodeUnit opCodeUnit;
-typedef struct opCodeUnit{
+struct opCodeUnit{
 	char read[8];
 	char translate[3];
 	struct opCodeUnit* next;
@@ -15,7 +15,7 @@ typedef struct opCodeUnit{
 opCodeUnit **alphtable;
 
 typedef struct symbleUnit symbleUnit;
-typedef struct symbleUnit{
+struct symbleUnit{
 	char read[16];
 	int address;
 };
@@ -30,6 +30,9 @@ void push(char*);
 opCodeUnit* getopCodeD(char*); 
 
 void pass2();
+void obj();
+void add(char*,int,int,int,char);
+void deletes();
 
 int main(){
 	
@@ -41,7 +44,6 @@ int main(){
 		exit(0);
 	}
 	
-	// 初始化 ALPHABET 大小(26)的 List，作為每個字母的Linked List開頭 
 	alphtable = (opCodeUnit**)malloc(sizeof(opCodeUnit*)*ALPHABET);
 	int i;
 	for(i = 0;i < ALPHABET;i++){
@@ -51,8 +53,7 @@ int main(){
 	char charBuf = NULL;
 	char stringBuf[15];
 	
-	//store the data which are in opCodefile into alphtable
-	while(charBuf != EOF){ 
+	while(charBuf != EOF){ //store the data which are in opCodefile into alphtable
 		fscanf(opCode,"%[^\n]",stringBuf);
 		int index = (stringBuf[0] >= 'a' && stringBuf[0] <= 'z')?stringBuf[0]-'a':stringBuf[0]-'A';		
 		if(*(alphtable + index) == NULL){
@@ -76,21 +77,23 @@ int main(){
 	fclose(opCode);
 	
 	
-	//第一階段 
+	
 	if((source_code = fopen(sourcefile,"r")) == NULL){
 		printf("Fail to open file %s !",sourcefile);
 		exit(0);
 	}
 	pass1();
+	
+	
 	fclose(source_code);
 	
-	
-	//第二階段 
 	if((source_code = fopen(sourcefile,"r")) == NULL){
 		printf("Fail to open file %s !",sourcefile);
 		exit(0);
 	}
 	pass2();
+	
+	
 	fclose(source_code);
    	
 	system("PAUSE");
@@ -135,7 +138,6 @@ void pass1(){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
 		printf("%X\t%s\n",location,strBuf);
-		strcpy(ProgramName,symbolBuf);
 	}
 	else{
 		location = 0;
@@ -147,6 +149,7 @@ void pass1(){
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	while(stricmp(opCodeBuf,"END")){
+		
 		
 		printf("%X\t%s\n",location,strBuf);
 		if(symbolBuf[0] != '\0'){
@@ -192,9 +195,6 @@ void pass1(){
 	Length = location-startAD;
 	//printf("%X\n",Length);
 	printf("\n\n\n");
-	
-	
-	//印出 symbol table
 	printf("symbol table:\n\n");
 	for(i = 0;i < TOP;i++){
 		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
@@ -227,7 +227,7 @@ void push(char* symbolBuf){
 	TOP++;
 }
 
-//註解相關 
+
 int commentLine(char* Line){
 	int i;
 	for(i = 0;i < strlen(Line);i++){
@@ -241,6 +241,8 @@ int commentLine(char* Line){
 		return 0;
 	}
 }
+
+
 
 void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	int i = 0,j;
@@ -262,7 +264,7 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	
 	
 	for(;;i++){
-		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')||strBuf[i]=='\0'){
+		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
 			break;
 		}
 	}
@@ -317,8 +319,6 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 			}
 			point = point->next;
 		}
-				if(point == NULL){
-		}
 	}
 	else if(opCodeBuf[0] >= 'a'&&opCodeBuf[0] <= 'z'){
 		point = *(alphtable + opCodeBuf[0]-'a');
@@ -333,15 +333,33 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 		printf("can't find %s in the table.\n",opCodeBuf);
 		exit(0);
 	}
-
 	return point;
 }
 
+int rear = 0;
 
+typedef struct link link;
+struct link{
+	char opCTrans[4];
+	int Xlocation;
+	int LOCAT;
+	int add;
+	char Cflag;
+};
+link* queue;
+void add(char* opCTrans,int Xlocation,int LOCAT,int add,char Cflag){
+	strcpy((queue+rear)->opCTrans,opCTrans);
+	(queue+rear)->Xlocation = Xlocation;
+	(queue+rear)->LOCAT = LOCAT;
+	(queue+rear)->add = add;
+	(queue+rear)->Cflag = Cflag;
+	rear++;
+}
+void deletes(){
+	
+}
 void pass2(){
 	outputSP = fopen("source_program.txt","w");
-	objectCode = fopen("objCode.txt","w");
-	fprintf(objectCode,"H%s\t%06X%06X\n",ProgramName,startAD,Length);
 	char strBuf[100];
 	char charBuf;
 	char symbolBuf[16];
@@ -361,7 +379,7 @@ void pass2(){
 
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 
-
+	strcpy(ProgramName,symbolBuf);
 	location = startAD;
 	fprintf(outputSP,"%X\t%s\n",location,strBuf);
 
@@ -373,7 +391,7 @@ void pass2(){
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 
 	int now = location;
-	fprintf(objectCode,"T%06X",location);
+	queue = (link*)malloc(sizeof(link)*contain);
 
 	while(stricmp(opCodeBuf,"END")){
 		int prelo = location;
@@ -387,6 +405,7 @@ void pass2(){
 					bufX16[1] = InputBuf[3];
 					bufX16[2] = '\0';
 					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(bufX16));
+					add(opCTrans,stringX16ToInt(bufX16),location,1,'B');
 				}
 				else if(InputBuf[0] == 'C'){
 					char bufX16[4];
@@ -394,20 +413,22 @@ void pass2(){
 					bufX16[1] = InputBuf[3];
 					bufX16[2] = InputBuf[4];
 					bufX16[3] = '\0';
-					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X%02X%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,bufX16[0],bufX16[1],bufX16[2]);
+					fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%02X%02X%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,bufX16[0],bufX16[1],bufX16[2]);
+					add(bufX16,0,location,3,'C');
 				} 
 			}
 			else if(!stricmp(opCodeBuf,"WORD")){
-				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(InputBuf));
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(InputBuf));
+				add(opCTrans,stringX16ToInt(InputBuf),location,3,'W');
 			}
 			else if(!stricmp(opCodeBuf,"RESB")){
-				fprintf(outputSP,"%x\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
 			}
 			else if(!stricmp(opCodeBuf,"RESW")){
-				fprintf(outputSP,"%x\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
 			}
 			else{
-				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
 			}	
 		}else{
 			strcpy(opCTrans,point->translate);
@@ -421,10 +442,10 @@ void pass2(){
 			}
 			if(i != TOP){
 				addLocate=(symbleTable+i)->address;
-				fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
 			}
 			else if(InputBuf[strlen(InputBuf)-2] == ','&&InputBuf[strlen(InputBuf)-1] == 'X'){
-				fprintf(outputSP,"%x\t%s\t%s\t%s\t%s",location,symbolBuf,opCodeBuf,InputBuf,opCTrans);
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t%s",location,symbolBuf,opCodeBuf,InputBuf,opCTrans);
 				InputBuf[strlen(InputBuf)-2] = '\0';
 				for(i = 0;i < TOP;i++){
 					if(!stricmp((symbleTable+i)->read, InputBuf)){
@@ -435,7 +456,7 @@ void pass2(){
 				addLocate += 32768;
 				fprintf(outputSP,"%04X\n",addLocate);
 			}
-
+			add(opCTrans,addLocate,location,3,'E');
 		}
 
 
@@ -463,10 +484,7 @@ void pass2(){
 			opCodeUnit* point = getopCodeD(opCodeBuf);
 			location += 3;
 		}
-		if(location - now > 31){
-			fprintf(objectCode,"\nT%06X",location);
-			now = location;
-		}
+
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
 			charBuf = fgetc(source_code);
@@ -474,8 +492,54 @@ void pass2(){
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	}
 	fprintf(outputSP,"\t%s\n",strBuf);
-	
 	fclose(outputSP);
-	fclose(objectCode);
+	obj();
 }
-
+void obj(){
+	OBJ = fopen("objCode.txt","w");
+	fprintf(OBJ,"H%s\t%06X%06X\n",ProgramName,startAD,Length);
+	int i,j;
+	int sum = 0;
+	int start = (queue+0)->LOCAT;
+	int startindex = 0;
+	int len = 0;
+	for(i = 0;i < rear;i++){
+		sum = (queue+i)->LOCAT - start;
+		if(sum > 29){
+			fprintf(OBJ,"T%06X %02X ",start,len);
+			for(j = startindex;j<i;j++){
+				switch ((queue+j)->Cflag){
+					case 'C':fprintf(OBJ,"%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+						break;
+					case 'B':fprintf(OBJ,"%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+						break;
+					case 'W':fprintf(OBJ,"%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+						break;
+					case 'E':fprintf(OBJ,"%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+						break;
+				}
+			}
+			fprintf(OBJ,"\n");
+			start = (queue+i)->LOCAT;
+			startindex = i;
+			len = 0;
+		}
+		len += (queue+i)->add;
+	}
+	
+	fprintf(OBJ,"T%06X %02X ",start,len);
+	for(j = startindex;j<i;j++){
+		switch ((queue+j)->Cflag){
+			case 'C':fprintf(OBJ,"%02X%02X%02X",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+				break;
+			case 'B':fprintf(OBJ,"%s%02X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+				break;
+			case 'W':fprintf(OBJ,"%s%06X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+				break;
+			case 'E':fprintf(OBJ,"%s%04X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			break;
+		}
+	}
+	fprintf(OBJ,"\n");
+	fprintf(OBJ,"E%06X\n",startAD);
+}
