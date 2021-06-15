@@ -323,7 +323,7 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	
 	
 	//略過空格、tab用 
-	for(;;i++){
+	for(;strBuf[i] != '\0';i++){ //+++++SU
 		if((strBuf[i] != '\t'&&strBuf[i] != ' ')&&(strBuf[i-1] == '\t'||strBuf[i-1] == ' ')){
 			break;
 		}
@@ -508,9 +508,7 @@ void pass2(){
 			else if(!stricmp(opCodeBuf,"RESW")){
 				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
 			}
-			else{
-				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
-			}	
+	
 		}else{
 			strcpy(opCTrans,point->translate);
 			objcode = 0;
@@ -536,6 +534,8 @@ void pass2(){
 				addLocate=(symbleTable+i)->address;
 				addLocate += 32768;
 				fprintf(outputSP,"%04X\n",addLocate);
+			}else{
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
 			}
 			add(opCTrans,addLocate,location,3,'E'); //else +=3
 		}
