@@ -331,7 +331,7 @@ void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
 	
 	
 	// 取得InputBuf
-	for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0'&&(strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0');i++,j++){ //不為tab、空格、字串尾端，繼續執行  
+	for(j = 0;strBuf[i] != '\t'&&strBuf[i] != ' '&&strBuf[i] != '\0';i++,j++){ //不為tab、空格、字串尾端，繼續執行  
 		InputBuf[j] = strBuf[i];
 	}
 	InputBuf[j] = '\0';	
@@ -578,7 +578,7 @@ void pass2(){
 //objcode 生成 (2) 
 void obj(){
 	OBJ = fopen("objCode.txt","w");
-	fprintf(OBJ,"H%s\t%06X%06X\n",ProgramName,startAD,Length); //h part  
+	fprintf(OBJ,"H%s\t%06X %06X\n",ProgramName,startAD,Length); //h part  
 	int i,j;
 	int sum = 0;
 	int start = (queue+0)->LOCAT;
@@ -611,13 +611,13 @@ void obj(){
 	fprintf(OBJ,"T%06X %02X ",start,len);
 	for(j = startindex;j<i;j++){
 		switch ((queue+j)->Cflag){
-			case 'C':fprintf(OBJ,"%02X%02X%02X",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+			case 'C':fprintf(OBJ,"%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
 				break;
-			case 'B':fprintf(OBJ,"%s%02X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'B':fprintf(OBJ,"%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 				break;
-			case 'W':fprintf(OBJ,"%s%06X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'W':fprintf(OBJ,"%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 				break;
-			case 'E':fprintf(OBJ,"%s%04X",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'E':fprintf(OBJ,"%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 			break;
 		}
 	}
