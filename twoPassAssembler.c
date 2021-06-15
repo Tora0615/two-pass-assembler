@@ -499,8 +499,8 @@ void pass2(){
 				} 
 			}
 			else if(!stricmp(opCodeBuf,"WORD")){
-				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(InputBuf));
-				add(opCTrans,stringX16ToInt(InputBuf),location,3,'W');
+				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX10ToInt(InputBuf));
+				add(opCTrans,stringX10ToInt(InputBuf),location,3,'W');
 			}
 			else if(!stricmp(opCodeBuf,"RESB")){
 				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
