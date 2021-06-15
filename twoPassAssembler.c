@@ -374,6 +374,7 @@ int stringX10ToInt(char* InputBuf){
 	return num;
 }
 
+//去字母表搜尋此 opCode， 並回傳記憶體位置 
 opCodeUnit* getopCodeD(char* opCodeBuf){
 	opCodeUnit* point;
 	if(opCodeBuf[0] >= 'A'&&opCodeBuf[0] <= 'Z'){
@@ -394,7 +395,7 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 			point = point->next;
 		}
 	}
-	else{
+	else{  //若有錯誤opCode直接退出 
 		printf("can't find %s in the table.\n",opCodeBuf);
 		exit(0);
 	}
@@ -586,7 +587,7 @@ void obj(){
 	int len = 0;
 	for(i = 0;i < rear;i++){
 		sum = (queue+i)->LOCAT - start;
-		if(sum > 29){
+		if(sum > 27){
 			fprintf(OBJ,"T%06X %02X ",start,len);
 			for(j = startindex;j<i;j++){
 				switch ((queue+j)->Cflag){
