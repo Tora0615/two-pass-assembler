@@ -53,7 +53,7 @@ struct opCodeUnit{
 opCodeUnit **alphtable;
 
 
-//宣告 symbleUnit 小單元的結構 
+//宣告 symble 小單元的結構 
 typedef struct symbleUnit symbleUnit;
 struct symbleUnit{
 	char read[16];
@@ -70,7 +70,10 @@ int stringX10ToInt(char*);
 int commentLine(char*);
 void push(char*);
 void pass2();
-void obj();
+void genObjCode();
+void genSymbolTable();
+void genSourceProgram();
+void genLocatedSourceProgram();
 void add(char*,int,int,int,char);
 void deletes();
 opCodeUnit* getopCodeD(char*); 
@@ -151,7 +154,6 @@ int main(){
 	pass2();
 	fclose(source_code);
    	
-	system("PAUSE");
 	return 0;
 }
 
@@ -163,19 +165,30 @@ symbleUnit* symbleTable;
 int Length;
 
 void pass1(){
+	genLocatedSourceProgram();
+	genSymbolTable();
+}
+
+// 生成包含location的 SourceProgram
+void genLocatedSourceProgram(){
 	char strBuf[100]; //symbol opCode Input (不含 \n )
 	char charBuf; // 吃掉 \n 用的 
 	char symbolBuf[16];
 	char opCodeBuf[8];
 	char InputBuf[16];
 	symbleTable = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
+	
+	// 一開始遇到註解就一直往下讀，直到不是註解的那行 
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
+	
+	
 	printf("Instruction and it's location counter:\n\n");
-	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf); //讀初始 
 	int i;
+	
 	if(!stricmp(opCodeBuf,"START")){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
@@ -192,18 +205,15 @@ void pass1(){
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	while(stricmp(opCodeBuf,"END")){
 		
-		
 		printf("%X\t%s\n",location,strBuf);
 		if(symbolBuf[0] != '\0'){
 			push(symbolBuf);
 		}
-		
 		if(!stricmp(opCodeBuf,"BYTE")){
 			if(InputBuf[0] == 'X'){	
 				location += 1;
 			}
 			else if(InputBuf[0] == 'C'){
-				
 				location += 3;
 			} 
 		}
@@ -236,6 +246,12 @@ void pass1(){
 	printf("\t%s\n",strBuf);
 	Length = location-startAD;
 	printf("\n\n\n");
+}
+
+
+//生成 SymbolTable
+void genSymbolTable(){
+	int i;
 	printf("symbol table:\n\n");
 	for(i = 0;i < TOP;i++){
 		printf("%s\t%x\n",(symbleTable+i)->read,(symbleTable+i)->address);
@@ -244,7 +260,10 @@ void pass1(){
 }
 
 
-// push pass1
+
+
+// pass 1
+// 堆疊元素 push 
 void push(char* symbolBuf){
 	int i;
 	for(i = 0;i < TOP;i++){
@@ -253,21 +272,24 @@ void push(char* symbolBuf){
 			exit(0);
 		}
 	}
-	if(TOP == STSize){
-		STSize *= 2;
-		symbleUnit* temp = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));
-		for(i = 0;i < TOP;i++){
+	if(TOP == STSize){  //如果要push的位置等於原本宣告的上限 
+		STSize *= 2;  //改為原本兩倍的大小 
+		symbleUnit* temp = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));  //malloc宣告
+		for(i = 0;i < TOP;i++){  //copy到新的 
 			strcpy((temp+i)->read,(symbleTable+i)->read);
 			(temp+i)->address = (symbleTable+i)->address;
 		}
-		symbleTable = temp;
+		symbleTable = temp;  //新的取代舊的 
 	}
+	
+	//實際上的push 
 	strcpy((symbleTable+TOP)->read,symbolBuf);
 	(symbleTable+TOP)->address = location;
 	TOP++;
 }
 
 // pass 1 & 2
+// 檢查讀到的位置是否為註解 (;開頭)，是註解回傳 1 
 int commentLine(char* Line){
 	int i;
 	for(i = 0;i < strlen(Line);i++){
@@ -281,7 +303,6 @@ int commentLine(char* Line){
 		return 0;
 	}
 }
-
 
 // 輸入 strBuf (只有一行) 輸出成 symbolBuf、opCodeBuf、InputBuf 字串 
 void getInst(char* strBuf,char* symbolBuf,char* opCodeBuf,char* InputBuf){
@@ -433,15 +454,15 @@ void add(char* opCTrans,int Xlocation,int LOCAT,int add,char Cflag){
 
 
 
-
-
-
-
 char ProgramName[30];
 
-
-
 void pass2(){
+	genSourceProgram();
+	genObjCode();
+}
+
+// pass 2 -  SourceProgram 生成
+void genSourceProgram(){
 	outputSP = fopen("source_program.txt","w");
 	char strBuf[100];
 	char charBuf;
@@ -480,7 +501,7 @@ void pass2(){
 		if (point == NULL){
 			strcpy(opCTrans,"");
 			if(!stricmp(opCodeBuf,"BYTE")){
-				if(InputBuf[0] == 'X'){
+				if(InputBuf[0] == 'X'){  //input like X'F1'
 					char bufX16[3];
 					bufX16[0] = InputBuf[2];
 					bufX16[1] = InputBuf[3];
@@ -488,7 +509,7 @@ void pass2(){
 					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(bufX16));
 					add(opCTrans,stringX16ToInt(bufX16),location,1,'B');
 				}
-				else if(InputBuf[0] == 'C'){
+				else if(InputBuf[0] == 'C'){  //input like C'EOF' 
 					char bufX16[4];
 					bufX16[0] = InputBuf[2];
 					bufX16[1] = InputBuf[3];
@@ -573,31 +594,34 @@ void pass2(){
 	}
 	fprintf(outputSP,"\t%s\n",strBuf);
 	fclose(outputSP);
-	obj();
 }
 
-//objcode 生成 (2) 
-void obj(){
-	OBJ = fopen("objCode.txt","w");
-	fprintf(OBJ,"H%s\t%06X %06X\n",ProgramName,startAD,Length); //h part  
+//pass 2 - objcode 生成 
+void genObjCode(){
+	OBJ = fopen("object_program.txt","w");
+	
+	// ohjectcode H part  
+	fprintf(OBJ,"H%s\t%06X %06X\n",ProgramName,startAD,Length); 
+	
+	// ohjectcode T part 
 	int i,j;
 	int sum = 0;
 	int start = (queue+0)->LOCAT;
 	int startindex = 0;
 	int len = 0;
-	for(i = 0;i < rear;i++){
-		sum = (queue+i)->LOCAT - start;
+	for(i = 0;i < rear;i++){  //i每次+1是新讀一個駐列的元素。 rear是駐列尾端。 
+		sum = (queue+i)->LOCAT - start; //駐列總長 (應該是字元?) 
 		if(sum > 27){
 			fprintf(OBJ,"T%06X %02X ",start,len);
-			for(j = startindex;j<i;j++){
+			for(j = startindex;j<i;j++){  
 				switch ((queue+j)->Cflag){
-					case 'C':fprintf(OBJ,"%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+					case 'C':fprintf(OBJ,"%02X%02X%02X ", (queue+j)->opCTrans[0], (queue+j)->opCTrans[1], (queue+j)->opCTrans[2]);
 						break;
-					case 'B':fprintf(OBJ,"%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+					case 'B':fprintf(OBJ,"%s%02X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
-					case 'W':fprintf(OBJ,"%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+					case 'W':fprintf(OBJ,"%s%06X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
-					case 'E':fprintf(OBJ,"%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+					case 'E':fprintf(OBJ,"%s%04X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
 				}
 			}
@@ -622,6 +646,8 @@ void obj(){
 			break;
 		}
 	}
-	fprintf(OBJ,"\n"); //t part 
-	fprintf(OBJ,"E%06X\n",startAD); //e part
+	fprintf(OBJ,"\n"); 
+	
+	// ohjectcode E part
+	fprintf(OBJ,"E%06X\n",startAD); 
 }
