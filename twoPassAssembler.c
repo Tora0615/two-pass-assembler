@@ -169,6 +169,33 @@ void pass1(){
 	genSymbolTable();
 }
 
+
+// pass 1
+// 堆疊元素 push 
+void push(char* symbolBuf){
+	int i;
+	for(i = 0;i < TOP;i++){
+		if(!stricmp((symbleTable+i)->read,symbolBuf)){
+			printf("Varible %s is already exist.\n",symbolBuf);
+			exit(0);
+		}
+	}
+	if(TOP == STSize){  //如果要push的位置等於原本宣告的上限 
+		STSize *= 2;  //改為原本兩倍的大小 
+		symbleUnit* temp = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));  //malloc宣告
+		for(i = 0;i < TOP;i++){  //copy到新的 
+			strcpy((temp+i)->read,(symbleTable+i)->read);
+			(temp+i)->address = (symbleTable+i)->address;
+		}
+		symbleTable = temp;  //新的取代舊的 
+	}
+	
+	//實際上的push 
+	strcpy((symbleTable+TOP)->read,symbolBuf);
+	(symbleTable+TOP)->address = location;
+	TOP++;
+}
+
 // 生成包含location的 SourceProgram
 void genLocatedSourceProgram(){
 	char strBuf[100]; //symbol opCode Input (不含 \n )
@@ -189,23 +216,36 @@ void genLocatedSourceProgram(){
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf); //讀初始 
 	int i;
 	
+	//不是開始那行(開始那行之後) 
 	if(!stricmp(opCodeBuf,"START")){
 		startAD = stringX16ToInt(InputBuf);
 		location = startAD;
-		printf("%X\t%s\n",location,strBuf);
+		printf("%X\t%s\n",location,strBuf);  //印該行位置+文字出來 
 	}
 	else{
 		location = 0;
 	}
 	
+	//一行一行一直讀，直到不是註解 
 	do{
-		fscanf(source_code,"%[^\n]",strBuf);
+		fscanf(source_code,"%[^\n]",strBuf); //讀不含換行的一整句 
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
-	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
+	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf); //1->3
+	
+	
+	//  功能：比較字符串s1和s2，但不分字母的大小寫。
+    //  s1<s2，返回值<0
+    //  s1=s2，返回值=0
+    //  s1>s2，返回值>0
+    //  while 非 0 都當True 
+    
+	//一直讀直到是END那行停止 
 	while(stricmp(opCodeBuf,"END")){
-		
+		//印這行的位置跟內容 
 		printf("%X\t%s\n",location,strBuf);
+		
+		//依照這行內容以及 OPcode，計算下行所在位置 
 		if(symbolBuf[0] != '\0'){
 			push(symbolBuf);
 		}
@@ -237,17 +277,19 @@ void genLocatedSourceProgram(){
 			location += 3;
 		}
 		
+		//讀取 
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
 			charBuf = fgetc(source_code);
 		}while(commentLine(strBuf));
 		getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 	}
+	
+	//印END那行 
 	printf("\t%s\n",strBuf);
 	Length = location-startAD;
 	printf("\n\n\n");
 }
-
 
 //生成 SymbolTable
 void genSymbolTable(){
@@ -261,32 +303,6 @@ void genSymbolTable(){
 
 
 
-
-// pass 1
-// 堆疊元素 push 
-void push(char* symbolBuf){
-	int i;
-	for(i = 0;i < TOP;i++){
-		if(!stricmp((symbleTable+i)->read,symbolBuf)){
-			printf("Varible %s is already exist.\n",symbolBuf);
-			exit(0);
-		}
-	}
-	if(TOP == STSize){  //如果要push的位置等於原本宣告的上限 
-		STSize *= 2;  //改為原本兩倍的大小 
-		symbleUnit* temp = (symbleUnit*)malloc(STSize*sizeof(symbleUnit));  //malloc宣告
-		for(i = 0;i < TOP;i++){  //copy到新的 
-			strcpy((temp+i)->read,(symbleTable+i)->read);
-			(temp+i)->address = (symbleTable+i)->address;
-		}
-		symbleTable = temp;  //新的取代舊的 
-	}
-	
-	//實際上的push 
-	strcpy((symbleTable+TOP)->read,symbolBuf);
-	(symbleTable+TOP)->address = location;
-	TOP++;
-}
 
 // pass 1 & 2
 // 檢查讀到的位置是否為註解 (;開頭)，是註解回傳 1 
@@ -431,6 +447,7 @@ opCodeUnit* getopCodeD(char* opCodeBuf){
 
 int rear = 0;
 
+
 typedef struct link link;
 struct link{
 	char opCTrans[4];
@@ -458,6 +475,7 @@ char ProgramName[30];
 
 void pass2(){
 	genSourceProgram();
+	printf("\n\n");
 	genObjCode();
 }
 
@@ -476,62 +494,75 @@ void genSourceProgram(){
 	int objcode = 0;
 	int addLocate;
 
+	//略過一開始註解們 
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
-
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 
-	strcpy(ProgramName,symbolBuf);
+	strcpy(ProgramName,symbolBuf); //抓出 ProgramName
+	
+	//第一行 
 	location = startAD;
 	fprintf(outputSP,"%X\t%s\n",location,strBuf);
+	printf("%X\t%s\n",location,strBuf);
 
-	
+	//略過註解們 
 	do{
 		fscanf(source_code,"%[^\n]",strBuf);
 		charBuf = fgetc(source_code);
 	}while(commentLine(strBuf));
 	getInst(strBuf,symbolBuf,opCodeBuf,InputBuf);
 
+	//駐列初始化 
 	queue = (link*)malloc(sizeof(link)*contain);
 
+	//沒到END之前一直做 
 	while(stricmp(opCodeBuf,"END")){
+		// 找這個opCode的位置 
 		point = getopCodeD(opCodeBuf);
+		
+		// opCode不存在 (位置=NULL) 
 		if (point == NULL){
-			strcpy(opCTrans,"");
-			if(!stricmp(opCodeBuf,"BYTE")){
-				if(InputBuf[0] == 'X'){  //input like X'F1'
+			strcpy(opCTrans,"");  //複製空的的對應碼到 opCTrans 
+			if(!stricmp(opCodeBuf,"BYTE")){  //當opCodeBuf 等於 "BYTE" (stricmp 相等為 0) 
+				//看開頭 (input like X'F1' or C'EOF') 
+				if(InputBuf[0] == 'X'){  //X直接摳來用 
 					char bufX16[3];
 					bufX16[0] = InputBuf[2];
 					bufX16[1] = InputBuf[3];
 					bufX16[2] = '\0';
 					fprintf(outputSP,"%x\t%s\t%s\t%s\t\t%s%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(bufX16));
-					add(opCTrans,stringX16ToInt(bufX16),location,1,'B');
+					printf("%x\t%s\t%s\t%s\t\t%s%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX16ToInt(bufX16));
+					add(opCTrans,stringX16ToInt(bufX16),location,1,'B');  //加入駐列 
 				}
-				else if(InputBuf[0] == 'C'){  //input like C'EOF' 
+				else if(InputBuf[0] == 'C'){  //C 則是把字元的ascii 轉16進位 
 					char bufX16[4];
 					bufX16[0] = InputBuf[2];
 					bufX16[1] = InputBuf[3];
 					bufX16[2] = InputBuf[4];
 					bufX16[3] = '\0';
 					fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%02X%02X%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,bufX16[0],bufX16[1],bufX16[2]);
-					add(bufX16,0,location,3,'C');
+					printf("%X\t%s\t%s\t%s\t\t%s%02X%02X%02X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,bufX16[0],bufX16[1],bufX16[2]);
+					add(bufX16,0,location,3,'C');  //加入駐列  
 				} 
 			}
-			else if(!stricmp(opCodeBuf,"WORD")){
+			else if(!stricmp(opCodeBuf,"WORD")){  //WORD轉十六進位 
 				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX10ToInt(InputBuf));
-				add(opCTrans,stringX10ToInt(InputBuf),location,3,'W');
+				printf("%X\t%s\t%s\t%s\t\t%s%06X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,stringX10ToInt(InputBuf));
+				add(opCTrans,stringX10ToInt(InputBuf),location,3,'W');  //加入駐列  
 			}
-			else if(!stricmp(opCodeBuf,"RESB")){
+			else if(!stricmp(opCodeBuf,"RESB")){  //啥都不用幹，印出來就好 
 				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+				printf("%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);   
 			}
-			else if(!stricmp(opCodeBuf,"RESW")){
+			else if(!stricmp(opCodeBuf,"RESW")){  //啥都不用幹，印出來就好  
 				fprintf(outputSP,"%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);
+				printf("%X\t%s\t%s\t%s\n",location,symbolBuf,opCodeBuf,InputBuf);   
 			}
-	
-		}else{
-			strcpy(opCTrans,point->translate);
+		}else{ //opCode存在 
+			strcpy(opCTrans,point->translate); //複製 opcode的對應碼到 opCTrans
 			objcode = 0;
 			addLocate = 0;
 			int i;
@@ -540,12 +571,15 @@ void genSourceProgram(){
 					break;
 				}
 			}
+			
+			//???? 
 			if(i != TOP){
 				addLocate=(symbleTable+i)->address;
 				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
-			}
-			else if(InputBuf[strlen(InputBuf)-2] == ','&&InputBuf[strlen(InputBuf)-1] == 'X'){
+				printf("%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+			}else if(InputBuf[strlen(InputBuf)-2] == ','&&InputBuf[strlen(InputBuf)-1] == 'X'){
 				fprintf(outputSP,"%X\t%s\t%s\t%s\t%s",location,symbolBuf,opCodeBuf,InputBuf,opCTrans);
+				printf("%X\t%s\t%s\t%s\t%s",location,symbolBuf,opCodeBuf,InputBuf,opCTrans);
 				InputBuf[strlen(InputBuf)-2] = '\0';
 				for(i = 0;i < TOP;i++){
 					if(!stricmp((symbleTable+i)->read, InputBuf)){
@@ -555,19 +589,22 @@ void genSourceProgram(){
 				addLocate=(symbleTable+i)->address;
 				addLocate += 32768;
 				fprintf(outputSP,"%04X\n",addLocate);
+				printf("%04X\n",addLocate);
 			}else{
 				fprintf(outputSP,"%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
+				printf("%X\t%s\t%s\t%s\t\t%s%04X\n",location,symbolBuf,opCodeBuf,InputBuf,opCTrans,addLocate);
 			}
+			
 			add(opCTrans,addLocate,location,3,'E'); //else +=3
 		}
 
-
+		
+		//對照類型，看 location要加多少 
 		if(!stricmp(opCodeBuf,"BYTE")){
 			if(InputBuf[0] == 'X'){	
 				location += 1;
 			}
 			else if(InputBuf[0] == 'C'){
-				
 				location += 3;
 			} 
 		}
@@ -585,7 +622,10 @@ void genSourceProgram(){
 		else{
 			location += 3;
 		}
+		
+		
 
+		//讀最後一行 
 		do{
 			fscanf(source_code,"%[^\n]",strBuf);
 			charBuf = fgetc(source_code);
@@ -596,12 +636,15 @@ void genSourceProgram(){
 	fclose(outputSP);
 }
 
+
+
 //pass 2 - objcode 生成 
 void genObjCode(){
 	OBJ = fopen("object_program.txt","w");
 	
 	// ohjectcode H part  
 	fprintf(OBJ,"H%s\t%06X %06X\n",ProgramName,startAD,Length); 
+	printf("H%s\t%06X %06X\n",ProgramName,startAD,Length); 
 	
 	// ohjectcode T part 
 	int i,j;
@@ -613,19 +656,30 @@ void genObjCode(){
 		sum = (queue+i)->LOCAT - start; //駐列總長 (應該是字元?) 
 		if(sum > 27){
 			fprintf(OBJ,"T%06X %02X ",start,len);
+			printf("T%06X %02X ",start,len);
 			for(j = startindex;j<i;j++){  
+				// 以 Cflag 類型判斷   //CASE代表??? 
 				switch ((queue+j)->Cflag){
-					case 'C':fprintf(OBJ,"%02X%02X%02X ", (queue+j)->opCTrans[0], (queue+j)->opCTrans[1], (queue+j)->opCTrans[2]);
+					case 'C' :  
+						fprintf(OBJ,"%02X%02X%02X ", (queue+j)->opCTrans[0], (queue+j)->opCTrans[1], (queue+j)->opCTrans[2]);
+						printf("%02X%02X%02X ", (queue+j)->opCTrans[0], (queue+j)->opCTrans[1], (queue+j)->opCTrans[2]);
 						break;
-					case 'B':fprintf(OBJ,"%s%02X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+					case 'B':
+						fprintf(OBJ,"%s%02X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+						printf("%s%02X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
-					case 'W':fprintf(OBJ,"%s%06X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+					case 'W':
+						fprintf(OBJ,"%s%06X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+						printf("%s%06X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
-					case 'E':fprintf(OBJ,"%s%04X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+					case 'E':
+						fprintf(OBJ,"%s%04X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
+						printf("%s%04X ", (queue+j)->opCTrans, (queue+j)->Xlocation);
 						break;
 				}
 			}
 			fprintf(OBJ,"\n");
+			printf("\n");
 			start = (queue+i)->LOCAT;
 			startindex = i;
 			len = 0;
@@ -634,20 +688,31 @@ void genObjCode(){
 	}
 	
 	fprintf(OBJ,"T%06X %02X ",start,len);
+	printf("T%06X %02X ",start,len);
 	for(j = startindex;j<i;j++){
 		switch ((queue+j)->Cflag){
-			case 'C':fprintf(OBJ,"%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+			case 'C' :
+				fprintf(OBJ,"%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
+				printf("%02X%02X%02X ",(queue+j)->opCTrans[0],(queue+j)->opCTrans[1],(queue+j)->opCTrans[2]);
 				break;
-			case 'B':fprintf(OBJ,"%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'B':
+				fprintf(OBJ,"%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+				printf("%s%02X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 				break;
-			case 'W':fprintf(OBJ,"%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'W':
+				fprintf(OBJ,"%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+				printf("%s%06X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 				break;
-			case 'E':fprintf(OBJ,"%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+			case 'E':
+				fprintf(OBJ,"%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
+				printf("%s%04X ",(queue+j)->opCTrans,(queue+j)->Xlocation);
 			break;
 		}
 	}
 	fprintf(OBJ,"\n"); 
+	printf("\n"); 
 	
 	// ohjectcode E part
 	fprintf(OBJ,"E%06X\n",startAD); 
+	printf("E%06X\n",startAD); 
 }
